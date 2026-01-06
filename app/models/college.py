@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Enum, TIMESTAMP
 from sqlalchemy.sql import func
 from app.core.database import Base
+from sqlalchemy.orm import relationship
 
 class College(Base):
     __tablename__ = "tbl_colleges"
@@ -21,3 +22,5 @@ class College(Base):
     accreditation = Column(String(50))
     status = Column(Integer, default=1)
     created_at = Column(TIMESTAMP, server_default=func.now())
+
+    faculty = relationship("Faculty", back_populates="college")

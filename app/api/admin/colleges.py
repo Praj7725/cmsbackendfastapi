@@ -16,8 +16,16 @@ def get_db():
 @router.get("/")
 def get_colleges(db: Session = Depends(get_db)):
     colleges = db.query(College).all()
-    return [
-        {
+    result = []
+    for c in colleges:
+        created_at = None
+        if getattr(c, "created_at", None):
+            try:
+                created_at = c.created_at.isoformat()
+            except Exception:
+                created_at = str(c.created_at)
+
+        result.append({
             "id": c.college_id,
             "name": c.college_name,
             "code": c.college_code,
@@ -27,10 +35,10 @@ def get_colleges(db: Session = Depends(get_db)):
             "students": 0,
             "faculty": 0,
             "status": "active" if c.status == 1 else "inactive",
-            "createdAt": c.created_at.strftime("%Y-%m-%d")
-        }
-        for c in colleges
-    ]
+            "createdAt": created_at,
+        })
+
+    return result
 
 @router.post("/")
 def create_college(data: dict, db: Session = Depends(get_db)):
@@ -84,3 +92,15 @@ def toggle_status(college_id: int, db: Session = Depends(get_db)):
     college.status = 0 if college.status == 1 else 1
     db.commit()
     return {"message": "Status updated"}
+
+
+@router.delete("/{college_id}")
+def delete_college(college_id: int, db: Session = Depends(get_db)):
+    college = db.query(College).filter(College.college_id == college_id).first()
+    if not college:
+        raise HTTPException(404, "College not found")
+
+    # perform a soft delete (set status to 0) to avoid accidental data loss
+    college.status = 0
+    db.commit()
+    return {"message": "College deleted (status set to inactive)"}
